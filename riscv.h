@@ -10,6 +10,18 @@
 
 #include <stdio.h>
 
+enum REG_NAMES{
+    zero = 0, ra,sp,gp, tp,t0,t1,t2,s0,s1,a0,
+    a1,a2,a3,a4,a5,a6,a7,s2,s3,s4,s5,
+    s6,s7,s8,s9,s10,s11,t3,t4,t5,t6
+};
+
+typedef struct{
+    uint32_t zero; uint32_t ra; uint32_t sp; uint32_t gp; uint32_t tp; uint32_t t0; uint32_t t1; uint32_t t2; uint32_t s0; uint32_t s1; uint32_t a0;
+    uint32_t a1; uint32_t a2; uint32_t a3; uint32_t a4; uint32_t a5; uint32_t a6; uint32_t a7; uint32_t s2; uint32_t s3; uint32_t s4; uint32_t s5;
+    uint32_t s6; uint32_t s7; uint32_t s8; uint32_t s9; uint32_t s10; uint32_t s11; uint32_t t3; uint32_t t4; uint32_t t5; uint32_t t6;
+} regs_t;
+
 enum EXECUTION_MODE{
     RV32I,
     RV32C,
@@ -38,9 +50,9 @@ typedef struct RISCV_t{
     uint32_t* vbr;
     
     //CPU State
-    uint32_t rd;
-    uint32_t rs1;
-    uint32_t rs2;
+    enum REG_NAMES rd;
+    enum REG_NAMES rs1;
+    enum REG_NAMES rs2;
     
     uint32_t func3;
     uint32_t func4;
@@ -50,9 +62,13 @@ typedef struct RISCV_t{
     
     uint32_t currentInstruction;
     uint64_t cycle;
+    
+    uint32_t* debug;
+    regs_t* resisters;
+    
 } RISCV_t;
 
-RISCV_t* initRISCV(void);
+void initRISCV(RISCV_t* cpu);
 
 void RISCVExecute(RISCV_t* cpu);
     
