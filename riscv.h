@@ -37,13 +37,6 @@ typedef struct{
 #endif
 
 
-
-enum EXECUTION_MODE{
-    RV32I,
-    RV32C,
-    RV64I
-};
-
 typedef struct RISCV_t RISCV_t;
 
 typedef struct RISCV_t{
@@ -65,32 +58,34 @@ typedef struct RISCV_t{
     
 #ifdef R64
     uint64_t xReg[32];
-    uint64_t pc;
 #else
     uint32_t xReg[32];
-    uint32_t pc;
 #endif
 
     
-    enum EXECUTION_MODE mode;
     uint32_t* vbr;
+    uint32_t iSize;
+    uint32_t currentInstruction;
+    uint64_t cycle;
+    uint32_t* debug;
+    
+    uint32_t func3;
+    uint32_t func4;
+    uint32_t func7;
     
     //CPU State
     enum REG_NAMES rd;
     enum REG_NAMES rs1;
     enum REG_NAMES rs2;
     
-    uint32_t func3;
-    uint32_t func4;
-    uint32_t func7;
     
     uint32_t imm;
     
-    uint32_t iSize;
-    uint32_t currentInstruction;
-    uint64_t cycle;
-    
-    uint32_t* debug;
+#ifdef R64
+    uint64_t pc;
+#else
+    uint32_t pc;
+#endif
     regs_t* resisters;
     
 } RISCV_t;

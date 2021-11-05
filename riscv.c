@@ -69,6 +69,7 @@ void CompressedMode(RISCV_t* cpu){
     cpu->func3 = cpu->func4 >> 1;
     cpu->rs1 = (cpu->currentInstruction & 0xF80)  >> 7;
     
+    cpu->iSize = 2;
 }
 
 void CRMode(RISCV_t* cpu){
@@ -129,7 +130,7 @@ void TRAP(RISCV_t* cpu){
     
     print("instruction 0x");
     
-    if(cpu->mode == RV32C){
+    if(cpu->iSize == 2){
         print("%0x",cpu->currentInstruction & 65535);
     }else{
         print("%0x",cpu->currentInstruction);
@@ -277,7 +278,19 @@ void RVlw(RISCV_t* cpu){
     
     uint32_t index = cpu->imm + cpu->xReg[cpu->rs1];
 
-    cpu->xReg[cpu->rd] = (uint32_t)cpu->read32(index);
+    cpu->xReg[cpu->rd] = (int32_t)cpu->read32(index);   //sign extend...
+    
+    cpu->cycle += 1;
+}
+
+
+void RVlwu(RISCV_t* cpu){
+    
+    print("%s, %d(%s)",abi[cpu->rd],cpu->imm,abi[cpu->rs1]);
+    
+    uint32_t index = cpu->imm + cpu->xReg[cpu->rs1];
+
+    cpu->xReg[cpu->rd] = (uint32_t)cpu->read32(index);   // don't sign extend...
     
     cpu->cycle += 1;
 }
@@ -327,10 +340,18 @@ void OPCode_0000011(RISCV_t* cpu){
             
         case 4:
             print("lbu ");
-            break;
+            TRAP(cpu);
             cpu->pc += cpu->iSize;
+            break;
         case 5:
             print("lhu ");
+            TRAP(cpu);
+            cpu->pc += cpu->iSize;
+            break;
+            
+        case 6:
+            print("lwu");
+            RVlwu(cpu);
             cpu->pc += cpu->iSize;
             break;
             
@@ -534,7 +555,6 @@ void RVsraiw(RISCV_t* cpu){
 
 void OPCode_0011011(RISCV_t* cpu){
     cpu->iSize = 4;
-    cpu->mode = RV64I;
     
     SMode(cpu);
     
@@ -593,7 +613,6 @@ void RVaddw(RISCV_t* cpu){
 void OPCode_0111011(RISCV_t* cpu){
     cpu->iSize = 4;
     RMode(cpu);
-    cpu->mode = RV64I;
     
     switch(cpu->func3){
         case 0:
@@ -678,6 +697,7 @@ void OPCode_0100011(RISCV_t* cpu){
             break;
             
         case 2:
+            
             print("sw ");
             RVsw(cpu);
             cpu->pc += cpu->iSize;
@@ -909,8 +929,7 @@ void OPCode_1100011(RISCV_t* cpu){
             RVbne(cpu);
             break;
         case 2:
-            print("blt ");
-            RVblt(cpu);
+            TRAP(cpu);
             break;
         case 3:
             print("illegal instruction ");
@@ -918,6 +937,7 @@ void OPCode_1100011(RISCV_t* cpu){
             break;
         case 4:
             print("blt ");
+            RVblt(cpu);
             break;
         case 5:
             print("bge ");
@@ -941,7 +961,8 @@ void OPCode_1100011(RISCV_t* cpu){
 //OPCodes
 
 void OPCode_00(RISCV_t* cpu){
-    cpu->iSize = 2;
+    CompressedMode(cpu);
+
     
     switch(cpu->func3){
         case 0:
@@ -985,7 +1006,8 @@ void OPCode_00(RISCV_t* cpu){
 }
 
 void OPCode_01(RISCV_t* cpu){
-    cpu->iSize = 2;
+    CompressedMode(cpu);
+
 
     
     switch(cpu->func3){
@@ -1091,7 +1113,7 @@ void OPCode_01(RISCV_t* cpu){
 }
 
 void OPCode_10(RISCV_t* cpu){
-    cpu->iSize = 2;
+    CompressedMode(cpu);
     
     switch(cpu->func3){
         case 0:
@@ -1114,7 +1136,9 @@ void OPCode_10(RISCV_t* cpu){
         case 8:
             
             if( (cpu->rs1 != 0) && (cpu->rs2 == 0) ){
-                print("c.jalr");
+                cpu->rd = cpu->currentInstruction & 0x1000 >> 12;
+                cpu->imm = 0;
+                print("c.jalr ");
                 RVjalr(cpu);
                 break;
             }
@@ -1166,18 +1190,37 @@ void RISCVinit(RISCV_t* cpu){
     cpu->interruptRequest = interruptRequest;
     
     
-    //Trap any unimplemented OPCodes
+
     for(int i=0; i<128;++i){
         cpu->opCode[i] = TRAP;
     }
     
     
+    
     //Build CPU OP Code table
     
     //RV32C set
-    cpu->opCode[0] = OPCode_00;
-    cpu->opCode[1] = OPCode_01;
-    cpu->opCode[2] = OPCode_10;
+    
+    for(int i=0; i < 128; ++i){
+        
+        if( (i & 3) == 0){
+            cpu->opCode[i] = OPCode_00;
+        }
+        
+        if( (i & 3) == 1){
+            cpu->opCode[i] = OPCode_01;
+        }
+        
+        if( (i & 3) == 2){
+            cpu->opCode[i] = OPCode_10;
+        }
+        
+        //Trap any unimplemented OPCodes
+        if( (i & 3) == 3){
+            cpu->opCode[i] = TRAP;
+        }
+        
+    }
     
     //RV32I & RV64I set
     cpu->opCode[3]   = OPCode_0000011;
@@ -1200,8 +1243,6 @@ void RISCVinit(RISCV_t* cpu){
         cpu->xReg[i] = 0;
     }
 
-
-    
     cpu->resisters = (regs_t*)&cpu->xReg[0]; // human readable form of the registers for debugging
 }
 
@@ -1222,42 +1263,7 @@ void RISCVExecute(RISCV_t* cpu){
     
     //Decode & Execute
     
-    /*
-    if((cpu->currentInstruction & 127) == 63){
-        
-        //64bit length instruction
-        TRAP(cpu);
-        
-    }else */
-        
-   /* // cycle count breakpoint for debugging
-    if(cpu->cycle == 1538837){
-        printf("Stop!");
-    }
-   */
-    
-    if((cpu->currentInstruction & 3) == 3){
-        cpu->mode = RV32I;
-        //32bit Mode
-        cpu->opCode[cpu->currentInstruction & 127](cpu);
-
-
-    }else{
-        
-        cpu->mode = RV32C;
-        //16bit mode
-        CompressedMode(cpu);
-        cpu->opCode[cpu->currentInstruction & 3](cpu);
-
-        
-    }
-
-    
-    /* // pc breakpoint for debugging
-    if(cpu->pc> 0x1000FFFFF){
-        printf("STOP!!!");
-    }
-    */
+    cpu->opCode[cpu->currentInstruction & 127](cpu);
     
     //Set xReg0 to 0 after every instruction, to discard any data stored there.
     cpu->xReg[0] = 0;
