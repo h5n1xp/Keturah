@@ -14,8 +14,7 @@ char* abi[] = {
 };
 
 
-//#define print(...) printf(__VA_ARGS__)
-#define print
+
 
 void RMode(RISCV_t* cpu){
     cpu->func7 = (cpu->currentInstruction & 0xFE000000) >>25;
@@ -216,7 +215,7 @@ void RVsltu(RISCV_t* cpu){
 
 
 void RVjalr(RISCV_t* cpu){
-    print("%s, %d(%s)",abi[cpu->rd],cpu->imm + cpu->pc,abi[cpu->rs1]);
+    print("%s, %s, %d",abi[cpu->rd],abi[cpu->rs1],cpu->imm);
     
     cpu->xReg[cpu->rd] = cpu->pc + 4;
     cpu->pc = cpu->xReg[cpu->rs1] + (int32_t)(cpu->imm);
@@ -234,7 +233,7 @@ void OPCode_1100111(RISCV_t* cpu){
 
 
 void RVjal(RISCV_t* cpu){
-    print("%s, %d",abi[cpu->rd],cpu->imm + cpu->pc);
+    print("%s, %0x",abi[cpu->rd],cpu->imm + cpu->pc);
     
     cpu->xReg[cpu->rd] = cpu->pc + cpu->iSize;
     cpu->pc += (int32_t)(cpu->imm);
@@ -254,7 +253,7 @@ void RVlb(RISCV_t* cpu){
     
     print("%s, %d(%s)",abi[cpu->rd],cpu->imm,abi[cpu->rs1]);
     
-    uint32_t index = cpu->imm + cpu->xReg[cpu->rs1];
+    uint32_t index = (int32_t)cpu->xReg[cpu->rs1] + (int32_t)cpu->imm;
 
     cpu->xReg[cpu->rd] = (uint32_t)cpu->read8(index);
     
@@ -265,7 +264,7 @@ void RVlh(RISCV_t* cpu){
     
     print("%s, %d(%s)",abi[cpu->rd],cpu->imm,abi[cpu->rs1]);
     
-    uint32_t index = cpu->imm + cpu->xReg[cpu->rs1];
+    uint32_t index = (int32_t)cpu->xReg[cpu->rs1] + (int32_t)cpu->imm;
 
     cpu->xReg[cpu->rd] = (uint32_t)cpu->read16(index);
     
@@ -276,7 +275,7 @@ void RVlw(RISCV_t* cpu){
     
     print("%s, %d(%s)",abi[cpu->rd],cpu->imm,abi[cpu->rs1]);
     
-    uint32_t index = cpu->imm + cpu->xReg[cpu->rs1];
+    uint32_t index = (int32_t)cpu->xReg[cpu->rs1] + (int32_t)cpu->imm;
 
     cpu->xReg[cpu->rd] = (int32_t)cpu->read32(index);   //sign extend...
     
@@ -288,7 +287,7 @@ void RVlwu(RISCV_t* cpu){
     
     print("%s, %d(%s)",abi[cpu->rd],cpu->imm,abi[cpu->rs1]);
     
-    uint32_t index = cpu->imm + cpu->xReg[cpu->rs1];
+    uint32_t index = (int32_t)cpu->xReg[cpu->rs1] + (int32_t)cpu->imm;
 
     cpu->xReg[cpu->rd] = (uint32_t)cpu->read32(index);   // don't sign extend...
     
@@ -299,7 +298,7 @@ void RVld(RISCV_t* cpu){
     
     print("%s, %d(%s)",abi[cpu->rd],cpu->imm,abi[cpu->rs1]);
     
-    uint32_t index = cpu->imm + cpu->xReg[cpu->rs1];
+    uint32_t index = (int32_t)cpu->xReg[cpu->rs1] + (int32_t)cpu->imm;
     
     cpu->xReg[cpu->rd] = (uint64_t)cpu->read64(index);
     
@@ -515,6 +514,9 @@ void OPCode_0010011(RISCV_t* cpu){
 
 
 void RVaddiw(RISCV_t* cpu){
+    
+
+    
     print("%s, %s, %d",abi[cpu->rd],abi[cpu->rs1],cpu->imm);
     cpu->xReg[cpu->rd] = (int32_t)cpu->xReg[cpu->rs1] + (int32_t)cpu->imm;
     cpu->cycle += 1;
@@ -637,7 +639,7 @@ void OPCode_0111011(RISCV_t* cpu){
 void RVsb(RISCV_t* cpu){
     print("%s,%d(%s)",abi[cpu->rs2],cpu->imm,abi[cpu->rs1]);
     
-    uint32_t index = cpu->imm + cpu->xReg[cpu->rs1];
+    uint32_t index = (int32_t)cpu->xReg[cpu->rs1] + (int32_t)cpu->imm;
     
     cpu->write8(index,(uint8_t)cpu->xReg[cpu->rs2]);
     
@@ -648,7 +650,7 @@ void RVsb(RISCV_t* cpu){
 void RVsh(RISCV_t* cpu){
     print("%s,%d(%s)",abi[cpu->rs2],cpu->imm,abi[cpu->rs1]);
     
-    uint32_t index = cpu->imm + cpu->xReg[cpu->rs1];
+    uint32_t index = (int32_t)cpu->xReg[cpu->rs1] + (int32_t)cpu->imm;
     
     cpu->write16(index,(uint16_t)cpu->xReg[cpu->rs2]);
     
@@ -659,7 +661,7 @@ void RVsh(RISCV_t* cpu){
 void RVsw(RISCV_t* cpu){
     print("%s,%d(%s)",abi[cpu->rs2],cpu->imm,abi[cpu->rs1]);
     
-    uint32_t index = cpu->imm + cpu->xReg[cpu->rs1];
+    uint32_t index = (int32_t)cpu->xReg[cpu->rs1] + (int32_t)cpu->imm;
     
     cpu->write32(index,(uint32_t)cpu->xReg[cpu->rs2]);
     
@@ -671,7 +673,7 @@ void RVsd(RISCV_t* cpu){
   
     print("%s,%d(%s)",abi[cpu->rs2],cpu->imm,abi[cpu->rs1]);
     
-    uint32_t index = cpu->imm + cpu->xReg[cpu->rs1];
+    uint32_t index = (int32_t)cpu->xReg[cpu->rs1] + (int32_t)cpu->imm;
     
     cpu->write64(index,(uint64_t)cpu->xReg[cpu->rs2]);
     
@@ -1262,6 +1264,10 @@ void RISCVExecute(RISCV_t* cpu){
     
     
     //Decode & Execute
+    
+    if(cpu->pc == 0x100028){
+        printf("");
+    }
     
     cpu->opCode[cpu->currentInstruction & 127](cpu);
     

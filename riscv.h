@@ -11,7 +11,8 @@
 #include <stdio.h>
 
 #define R64
-
+#define print(...) printf(__VA_ARGS__)
+//#define print
 
     
 
