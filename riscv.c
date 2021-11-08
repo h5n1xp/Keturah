@@ -193,10 +193,16 @@ void RVsra(RISCV_t* cpu){
 }
 
 void RVslt(RISCV_t* cpu){
-    print("%s, %s, %s",abi[cpu->rd],abi[cpu->rs1],abi[cpu->rs2]);
-    cpu->xReg[cpu->rd] = (cpu->xReg[cpu->rs1] < cpu->xReg[cpu->rs2])?1:0;
-    cpu->cycle += 1;
     
+#ifdef R64
+    print("%s, %s, %s",abi[cpu->rd],abi[cpu->rs1],abi[cpu->rs2]);
+    cpu->xReg[cpu->rd] = (int64_t)(cpu->xReg[cpu->rs1] < (int64_t)cpu->xReg[cpu->rs2])?1:0;
+    cpu->cycle += 1;
+#else
+    print("%s, %s, %s",abi[cpu->rd],abi[cpu->rs1],abi[cpu->rs2]);
+    cpu->xReg[cpu->rd] = (int32_t)(cpu->xReg[cpu->rs1] < (int32_t)cpu->xReg[cpu->rs2])?1:0;
+    cpu->cycle += 1;
+#endif
 }
 
 void RVsltu(RISCV_t* cpu){
@@ -388,8 +394,8 @@ void RVaddi(RISCV_t* cpu){
 
 void RVslli(RISCV_t* cpu){
     print("%s, %s, %d",abi[cpu->rd],abi[cpu->rs1],cpu->imm);
+    
 #ifdef R64
-
     cpu->xReg[cpu->rd] = cpu->xReg[cpu->rs1] << (cpu->imm & 0x3F);
     cpu->cycle += 1;
 #else
@@ -401,8 +407,13 @@ void RVslli(RISCV_t* cpu){
 
 void RVslti(RISCV_t* cpu){
     print("%s, %s, %d",abi[cpu->rd],abi[cpu->rs1],cpu->imm);
-    cpu->xReg[cpu->rd] = (cpu->xReg[cpu->rs1] < cpu->imm) ? 1:0;
+#ifdef R64
+    cpu->xReg[cpu->rd] = ((int64_t)cpu->xReg[cpu->rs1] < (int64_t)cpu->imm) ? 1:0;
     cpu->cycle += 1;
+#else
+    cpu->xReg[cpu->rd] = ((int32_t)cpu->xReg[cpu->rs1] < (int32_t)cpu->imm) ? 1:0;
+    cpu->cycle += 1;
+#endif
 }
 
 void RVsltiu(RISCV_t* cpu){
@@ -809,23 +820,7 @@ void OPCode_0110011(RISCV_t* cpu){
 }
 
 
-void OPCode_1110011(RISCV_t* cpu){
-    cpu->iSize = 4;
-    IMode(cpu);
-    
-    switch(cpu->imm){
-            
-        case 0:
-            print("ecall ");
-            cpu->pc += cpu->iSize;
-            break;
-        case 1:
-            print("ebreak ");
-            cpu->pc += cpu->iSize;
-            break;
-    }
-    
-}
+
 
 
 
@@ -862,14 +857,23 @@ void RVbne(RISCV_t* cpu){
 void RVblt(RISCV_t* cpu){
     print("%s, %s, %d",abi[cpu->rs1],abi[cpu->rs2],cpu->imm + cpu->pc);
     
-    if(cpu->xReg[cpu->rs1] < cpu->xReg[cpu->rs2]){
+#ifdef R64
+    if((int64_t)cpu->xReg[cpu->rs1] < (int64_t)cpu->xReg[cpu->rs2]){
         
         cpu->pc += (int32_t)cpu->imm;
         
     }else{
         cpu->pc += cpu->iSize;
     }
-    
+#else
+    if((int32_t)cpu->xReg[cpu->rs1] < (int32_t)cpu->xReg[cpu->rs2]){
+        
+        cpu->pc += (int32_t)cpu->imm;
+        
+    }else{
+        cpu->pc += cpu->iSize;
+    }
+#endif
     cpu->cycle += 1;
 }
 
@@ -877,14 +881,23 @@ void RVblt(RISCV_t* cpu){
 void RVbge(RISCV_t* cpu){
     print("%s, %s, %d",abi[cpu->rs1],abi[cpu->rs2],cpu->imm + cpu->pc);
     
-    if(cpu->xReg[cpu->rs1] >= cpu->xReg[cpu->rs2]){
+#ifdef R64
+    if((int64_t)cpu->xReg[cpu->rs1] >= (int64_t)cpu->xReg[cpu->rs2]){
         
         cpu->pc += (int32_t)cpu->imm;
         
     }else{
         cpu->pc += cpu->iSize;
     }
-    
+#else
+    if((int32_t)cpu->xReg[cpu->rs1] >= (int32_t)cpu->xReg[cpu->rs2]){
+        
+        cpu->pc += (int32_t)cpu->imm;
+        
+    }else{
+        cpu->pc += cpu->iSize;
+    }
+#endif
     cpu->cycle += 1;
 }
 
@@ -957,6 +970,90 @@ void OPCode_1100011(RISCV_t* cpu){
     
 }
 
+
+
+void OPCode_1110011(RISCV_t* cpu){
+    cpu->iSize = 4;
+    RMode(cpu);
+    
+    switch(cpu->func3){
+            
+        case 0:
+            
+            switch(cpu->rs2){
+                    
+                case 0:
+                    print("ecall ");
+                    TRAP(cpu);
+                    break;
+                    
+                case 1:
+                    print("ebreak ");
+                    TRAP(cpu);
+                    cpu->pc += 4;
+                    break;
+                    
+                case 2:
+            
+                    switch(cpu->func7){
+            
+                        case 0:
+                            print("uret ");
+                            TRAP(cpu);
+                            break;
+                    
+                        case 8:
+                            print("sret ");
+                            TRAP(cpu);
+                            break;
+                    
+                        case 16:
+                            print("hret ");
+                            TRAP(cpu);
+                            break;
+                    
+                        case 24:
+                            print("mret ");
+                            TRAP(cpu);
+                            break;
+                            
+                        default:
+                            TRAP(cpu);
+                            break;
+                    }
+                    break;
+                    
+                case 4:
+                    printf("sfence ");
+                    TRAP(cpu);
+                    break;
+                    
+                case 5:
+                    printf("wfi ");
+                    //Wait For Interrupt... same as hlt on x86 I guess...
+                    TRAP(cpu);
+                    break;
+                    
+                case 18:
+                    print("dret ");
+                    TRAP(cpu);
+                    break;
+                    
+                default:
+                    TRAP(cpu);
+                    break;
+            }
+            break;
+            
+            
+            
+            
+        default:
+            TRAP(cpu);
+            break;
+    }
+    
+}
 
 
 //************************************** Compressed RV32C

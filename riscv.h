@@ -50,7 +50,7 @@ typedef struct RISCV_t{
     void (*write8)(uint32_t,uint8_t);  // memory handler write(address, value)
     void (*write16)(uint32_t,uint16_t);
     void (*write32)(uint32_t,uint32_t);
-    void (*write64)(uint32_t,uint32_t);
+    void (*write64)(uint32_t,uint64_t);
     
     void (*interruptRequest)(void);
     
@@ -59,6 +59,8 @@ typedef struct RISCV_t{
     
 #ifdef R64
     uint64_t xReg[32];
+    uint64_t mtvec;     //Interrupt base address
+    uint64_t mepc;      //interrupted PC
 #else
     uint32_t xReg[32];
 #endif
