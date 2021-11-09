@@ -14,8 +14,6 @@ char* abi[] = {
 };
 
 
-
-
 void RMode(RISCV_t* cpu){
     cpu->func7 = (cpu->currentInstruction & 0xFE000000) >>25;
     cpu->func3 = (cpu->currentInstruction & 0x7000)    >> 12;
@@ -52,13 +50,10 @@ void BMode(RISCV_t* cpu){
 void UMode(RISCV_t* cpu){
     cpu->rd    = (cpu->currentInstruction & 0xF80) >> 7;
     cpu->imm   = (cpu->currentInstruction & 0xFFFFF000);
-    printf("");
 }
 
 void JMode(RISCV_t* cpu){
     cpu->rd    = (cpu->currentInstruction & 0xF80) >> 7;
-    //cpu->imm   = ((cpu->currentInstruction & 0xF00) >> 7) | ((cpu->currentInstruction & 0x7E000000) >> 20) | ((cpu->currentInstruction & 0x80) << 4) | ((cpu->currentInstruction & 0x80000000) >> 19);
-    
     cpu->imm = ((cpu->currentInstruction & 0x7FE00000) >> 20) | ((cpu->currentInstruction & 0x100000) >> 9) | (cpu->currentInstruction & 0xFF000) | ((int32_t)(cpu->currentInstruction & 0x80000000) >> 11);
 }
 
@@ -108,7 +103,6 @@ void CBRMode(RISCV_t* cpu){
     cpu->rs1 =  ((cpu->currentInstruction & 0x380)   >> 7) + 8;
     cpu->rs2 = 0;
     
-   // cpu->imm 8|4:3|7:6|2:1|5
     
     cpu->imm = (cpu->currentInstruction & 0x1000) << 19; // 8
     cpu->imm = ((int32_t)(cpu->imm & 0x80000000) >> 23); // 8
@@ -121,7 +115,6 @@ void CBRMode(RISCV_t* cpu){
     
     cpu->imm = cpu->imm | (cpu->currentInstruction & 0xC18) >> 2; // 2:1
     
-    //cpu->imm = ((cpu->currentInstruction & 0x7C) >> 2) | ((int32_t)(cpu->currentInstruction & 0x1C00) >> 5);
 }
 
 
@@ -144,43 +137,43 @@ void TRAP(RISCV_t* cpu){
 void RVadd(RISCV_t* cpu){
     print("%s, %s, %s",abi[cpu->rd],abi[cpu->rs1],abi[cpu->rs2]);
     cpu->xReg[cpu->rd] = cpu->xReg[cpu->rs1] + cpu->xReg[cpu->rs2];
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 void RVsub(RISCV_t* cpu){
     print("%s, %s, %s",abi[cpu->rd],abi[cpu->rs1],abi[cpu->rs2]);
     cpu->xReg[cpu->rd] = cpu->xReg[cpu->rs1] - cpu->xReg[cpu->rs2];
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 void RVxor(RISCV_t* cpu){
     print("%s, %s, %s",abi[cpu->rd],abi[cpu->rs1],abi[cpu->rs2]);
     cpu->xReg[cpu->rd] = cpu->xReg[cpu->rs1] ^ cpu->xReg[cpu->rs2];
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 void RVor(RISCV_t* cpu){
     print("%s, %s, %s",abi[cpu->rd],abi[cpu->rs1],abi[cpu->rs2]);
     cpu->xReg[cpu->rd] = cpu->xReg[cpu->rs1] | cpu->xReg[cpu->rs2];
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 void RVand(RISCV_t* cpu){
     print("%s, %s, %s",abi[cpu->rd],abi[cpu->rs1],abi[cpu->rs2]);
     cpu->xReg[cpu->rd] = cpu->xReg[cpu->rs1] & cpu->xReg[cpu->rs2];
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 void RVsll(RISCV_t* cpu){
     print("%s, %s, %s",abi[cpu->rd],abi[cpu->rs1],abi[cpu->rs2]);
     cpu->xReg[cpu->rd] = cpu->xReg[cpu->rs1] << cpu->xReg[cpu->rs2];
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 void RVsrl(RISCV_t* cpu){
     print("%s, %s, %s",abi[cpu->rd],abi[cpu->rs1],abi[cpu->rs2]);
     cpu->xReg[cpu->rd] = cpu->xReg[cpu->rs1] >> cpu->xReg[cpu->rs2];
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 void RVsra(RISCV_t* cpu){
@@ -188,7 +181,7 @@ void RVsra(RISCV_t* cpu){
     
     cpu->xReg[cpu->rd] = (int32_t)cpu->xReg[cpu->rs1] >> cpu->xReg[cpu->rs2];
     
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
     
 }
 
@@ -197,11 +190,11 @@ void RVslt(RISCV_t* cpu){
 #ifdef R64
     print("%s, %s, %s",abi[cpu->rd],abi[cpu->rs1],abi[cpu->rs2]);
     cpu->xReg[cpu->rd] = (int64_t)(cpu->xReg[cpu->rs1] < (int64_t)cpu->xReg[cpu->rs2])?1:0;
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 #else
     print("%s, %s, %s",abi[cpu->rd],abi[cpu->rs1],abi[cpu->rs2]);
     cpu->xReg[cpu->rd] = (int32_t)(cpu->xReg[cpu->rs1] < (int32_t)cpu->xReg[cpu->rs2])?1:0;
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 #endif
 }
 
@@ -209,7 +202,7 @@ void RVsltu(RISCV_t* cpu){
     print("%s, %s, %s",abi[cpu->rd],abi[cpu->rs1],abi[cpu->rs2]);
     //I have no fucking clue what this instruction is for.
     cpu->xReg[cpu->rd] = (cpu->xReg[cpu->rs1] < cpu->xReg[cpu->rs2])?1:0;
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
     
 }
 
@@ -226,7 +219,7 @@ void RVjalr(RISCV_t* cpu){
     cpu->xReg[cpu->rd] = cpu->pc + 4;
     cpu->pc = cpu->xReg[cpu->rs1] + (int32_t)(cpu->imm);
     
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
     
 }
 
@@ -244,7 +237,7 @@ void RVjal(RISCV_t* cpu){
     cpu->xReg[cpu->rd] = cpu->pc + cpu->iSize;
     cpu->pc += (int32_t)(cpu->imm);
     
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 void OPCode_1101111(RISCV_t* cpu){
@@ -261,9 +254,9 @@ void RVlb(RISCV_t* cpu){
     
     uint32_t index = (int32_t)cpu->xReg[cpu->rs1] + (int32_t)cpu->imm;
 
-    cpu->xReg[cpu->rd] = (uint32_t)cpu->read8(index);
+    cpu->xReg[cpu->rd] = (int8_t)cpu->read8(index);
     
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 void RVlh(RISCV_t* cpu){
@@ -272,9 +265,9 @@ void RVlh(RISCV_t* cpu){
     
     uint32_t index = (int32_t)cpu->xReg[cpu->rs1] + (int32_t)cpu->imm;
 
-    cpu->xReg[cpu->rd] = (uint32_t)cpu->read16(index);
+    cpu->xReg[cpu->rd] = (int16_t)cpu->read16(index);
     
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 void RVlw(RISCV_t* cpu){
@@ -285,7 +278,7 @@ void RVlw(RISCV_t* cpu){
 
     cpu->xReg[cpu->rd] = (int32_t)cpu->read32(index);   //sign extend...
     
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 
@@ -297,7 +290,7 @@ void RVlwu(RISCV_t* cpu){
 
     cpu->xReg[cpu->rd] = (uint32_t)cpu->read32(index);   // don't sign extend...
     
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 void RVld(RISCV_t* cpu){
@@ -308,8 +301,32 @@ void RVld(RISCV_t* cpu){
     
     cpu->xReg[cpu->rd] = (uint64_t)cpu->read64(index);
     
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
+
+
+void RVlbu(RISCV_t* cpu){
+    
+    print("%s, %d(%s)",abi[cpu->rd],cpu->imm,abi[cpu->rs1]);
+    
+    uint32_t index = (int32_t)cpu->xReg[cpu->rs1] + (int32_t)cpu->imm;
+
+    cpu->xReg[cpu->rd] = (uint8_t)cpu->read8(index);
+    
+    *cpu->cycle += 1;
+}
+
+void RVlhu(RISCV_t* cpu){
+    
+    print("%s, %d(%s)",abi[cpu->rd],cpu->imm,abi[cpu->rs1]);
+    
+    uint32_t index = (int32_t)cpu->xReg[cpu->rs1] + (int32_t)cpu->imm;
+
+    cpu->xReg[cpu->rd] = (uint16_t)cpu->read16(index);
+    
+    *cpu->cycle += 1;
+}
+
 
 
 void OPCode_0000011(RISCV_t* cpu){
@@ -345,12 +362,12 @@ void OPCode_0000011(RISCV_t* cpu){
             
         case 4:
             print("lbu ");
-            TRAP(cpu);
+            RVlbu(cpu);
             cpu->pc += cpu->iSize;
             break;
         case 5:
             print("lhu ");
-            TRAP(cpu);
+            RVlhu(cpu);
             cpu->pc += cpu->iSize;
             break;
             
@@ -388,7 +405,7 @@ void RVaddi(RISCV_t* cpu){
     
 
     cpu->xReg[cpu->rd] = cpu->xReg[cpu->rs1] + (int32_t)cpu->imm;
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 
 }
 
@@ -397,10 +414,10 @@ void RVslli(RISCV_t* cpu){
     
 #ifdef R64
     cpu->xReg[cpu->rd] = cpu->xReg[cpu->rs1] << (cpu->imm & 0x3F);
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 #else
     cpu->xReg[cpu->rd] = cpu->xReg[cpu->rs1] << (cpu->imm & 0x1F);
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 #endif
     
 }
@@ -409,23 +426,23 @@ void RVslti(RISCV_t* cpu){
     print("%s, %s, %d",abi[cpu->rd],abi[cpu->rs1],cpu->imm);
 #ifdef R64
     cpu->xReg[cpu->rd] = ((int64_t)cpu->xReg[cpu->rs1] < (int64_t)cpu->imm) ? 1:0;
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 #else
     cpu->xReg[cpu->rd] = ((int32_t)cpu->xReg[cpu->rs1] < (int32_t)cpu->imm) ? 1:0;
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 #endif
 }
 
 void RVsltiu(RISCV_t* cpu){
     print("%s, %s, %d",abi[cpu->rd],abi[cpu->rs1],cpu->imm);
     cpu->xReg[cpu->rd] = (cpu->xReg[cpu->rs1] < cpu->imm) ? 1:0;
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 void RVxori(RISCV_t* cpu){
     print("%s, %s, %d",abi[cpu->rd],abi[cpu->rs1],cpu->imm);
     cpu->xReg[cpu->rd] = cpu->xReg[cpu->rs1] ^ cpu->imm;
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 
@@ -434,11 +451,11 @@ void RVsrai(RISCV_t* cpu){
 #ifdef R64
     print("%s, %s, %d",abi[cpu->rd],abi[cpu->rs1],cpu->imm);
     cpu->xReg[cpu->rd] = (int64_t)cpu->xReg[cpu->rs1] >> (cpu->imm & 0x3F);
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 #else
     print("%s, %s, %d",abi[cpu->rd],abi[cpu->rs1],cpu->imm);
     cpu->xReg[cpu->rd] = (int32_t)cpu->xReg[cpu->rs1] >> (cpu->imm & 0x1F);
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 #endif
 }
 
@@ -447,24 +464,24 @@ void RVsrli(RISCV_t* cpu){
 #ifdef R64
     print("%s, %s, %d",abi[cpu->rd],abi[cpu->rs1],cpu->imm);
     cpu->xReg[cpu->rd] = cpu->xReg[cpu->rs1] >> (cpu->imm & 0x3F);
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 #else
     print("%s, %s, %d",abi[cpu->rd],abi[cpu->rs1],cpu->imm);
     cpu->xReg[cpu->rd] = cpu->xReg[cpu->rs1] >> (cpu->imm & 0x1F);
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 #endif
 }
 
 void RVori(RISCV_t* cpu){
     print("%s, %s, %d",abi[cpu->rd],abi[cpu->rs1],cpu->imm);
     cpu->xReg[cpu->rd] = cpu->xReg[cpu->rs1] | cpu->imm;
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 void RVandi(RISCV_t* cpu){
     print("%s, %s, %d",abi[cpu->rd],abi[cpu->rs1],cpu->imm);
     cpu->xReg[cpu->rd] = cpu->xReg[cpu->rs1] & cpu->imm;
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 void OPCode_0010011(RISCV_t* cpu){
@@ -530,7 +547,7 @@ void RVaddiw(RISCV_t* cpu){
     
     print("%s, %s, %d",abi[cpu->rd],abi[cpu->rs1],cpu->imm);
     cpu->xReg[cpu->rd] = (int32_t)cpu->xReg[cpu->rs1] + (int32_t)cpu->imm;
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 void RVslliw(RISCV_t* cpu){
@@ -541,7 +558,7 @@ void RVslliw(RISCV_t* cpu){
     cpu->imm = cpu->rs2;
     
     cpu->xReg[cpu->rd] = (uint32_t)cpu->xReg[cpu->rs1] << cpu->imm;
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 void RVsrliw(RISCV_t* cpu){
@@ -552,7 +569,7 @@ void RVsrliw(RISCV_t* cpu){
     cpu->imm = cpu->rs2;
     
     cpu->xReg[cpu->rd] = (uint32_t)cpu->xReg[cpu->rs1] >> cpu->imm;
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 void RVsraiw(RISCV_t* cpu){
@@ -563,7 +580,7 @@ void RVsraiw(RISCV_t* cpu){
     cpu->imm = cpu->rs2;
     
     cpu->xReg[cpu->rd] = (int32_t)cpu->xReg[cpu->rs1] >> cpu->imm;
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 void OPCode_0011011(RISCV_t* cpu){
@@ -613,13 +630,13 @@ void OPCode_0011011(RISCV_t* cpu){
 void RVsubw(RISCV_t* cpu){
     print("%s, %s, %s",abi[cpu->rd],abi[cpu->rs1],abi[cpu->rs2]);
     cpu->xReg[cpu->rd] = (int32_t)cpu->xReg[cpu->rs1] - (int32_t)cpu->xReg[cpu->rs2];
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 void RVaddw(RISCV_t* cpu){
     print("%s, %s, %s",abi[cpu->rd],abi[cpu->rs1],abi[cpu->rs2]);
     cpu->xReg[cpu->rd] = (int32_t)cpu->xReg[cpu->rs1] + (int32_t)cpu->xReg[cpu->rs2];
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 
@@ -654,7 +671,7 @@ void RVsb(RISCV_t* cpu){
     
     cpu->write8(index,(uint8_t)cpu->xReg[cpu->rs2]);
     
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
     
 }
 
@@ -665,7 +682,7 @@ void RVsh(RISCV_t* cpu){
     
     cpu->write16(index,(uint16_t)cpu->xReg[cpu->rs2]);
     
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
     
 }
 
@@ -676,7 +693,7 @@ void RVsw(RISCV_t* cpu){
     
     cpu->write32(index,(uint32_t)cpu->xReg[cpu->rs2]);
     
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
     
 }
 
@@ -688,7 +705,7 @@ void RVsd(RISCV_t* cpu){
     
     cpu->write64(index,(uint64_t)cpu->xReg[cpu->rs2]);
     
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 void OPCode_0100011(RISCV_t* cpu){
@@ -740,7 +757,7 @@ void RVlui(RISCV_t* cpu){
     print("%s,%d",abi[cpu->rd],cpu->imm >> 12);
     
     cpu->xReg[cpu->rd] = (int32_t)cpu->imm;
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 void OPCode_0110111(RISCV_t* cpu){
@@ -836,7 +853,7 @@ void RVbeq(RISCV_t* cpu){
         cpu->pc += cpu->iSize;
     }
     
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
     
 }
 
@@ -851,7 +868,7 @@ void RVbne(RISCV_t* cpu){
         cpu->pc += cpu->iSize;
     }
     
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 void RVblt(RISCV_t* cpu){
@@ -874,7 +891,7 @@ void RVblt(RISCV_t* cpu){
         cpu->pc += cpu->iSize;
     }
 #endif
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 
@@ -898,7 +915,7 @@ void RVbge(RISCV_t* cpu){
         cpu->pc += cpu->iSize;
     }
 #endif
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 void RVbltu(RISCV_t* cpu){
@@ -912,7 +929,7 @@ void RVbltu(RISCV_t* cpu){
         cpu->pc += cpu->iSize;
     }
     
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
     
 }
 
@@ -927,7 +944,7 @@ void RVbgeu(RISCV_t* cpu){
         cpu->pc += cpu->iSize;
     }
     
-    cpu->cycle += 1;
+    *cpu->cycle += 1;
 }
 
 void OPCode_1100011(RISCV_t* cpu){
@@ -970,7 +987,18 @@ void OPCode_1100011(RISCV_t* cpu){
     
 }
 
-
+void RVcsrrw(RISCV_t* cpu){
+    print("%s, %0x, %s",abi[cpu->rd],cpu->imm,abi[cpu->rs1]);
+    
+    //Should check if the csr is read/write
+    
+    uint64_t temp = cpu->csr[cpu->imm];
+    cpu->csr[cpu->imm] = cpu->xReg[cpu->rs1];
+    cpu->xReg[cpu->rd] = temp;
+    
+    *cpu->cycle +=1;
+    
+}
 
 void OPCode_1110011(RISCV_t* cpu){
     cpu->iSize = 4;
@@ -1029,9 +1057,11 @@ void OPCode_1110011(RISCV_t* cpu){
                     break;
                     
                 case 5:
-                    printf("wfi ");
+                    print("wfi ");
                     //Wait For Interrupt... same as hlt on x86 I guess...
-                    TRAP(cpu);
+                    cpu->pc += 4;
+                    *cpu->cycle += 1;
+                    cpu->halt = 1;
                     break;
                     
                 case 18:
@@ -1046,7 +1076,32 @@ void OPCode_1110011(RISCV_t* cpu){
             break;
             
             
-            
+        case 1:
+            IMode(cpu);
+            print("csrrw ");
+            RVcsrrw(cpu);
+            cpu->pc += 4;
+            break;
+        case 2:
+            print("csrrs ");
+            TRAP(cpu);
+            break;
+        case 3:
+            print("csrrc ");
+            TRAP(cpu);
+            break;
+        case 5:
+            print("csrrwi ");
+            TRAP(cpu);
+            break;
+        case 6:
+            print("csrrsi ");
+            TRAP(cpu);
+            break;
+        case 7:
+            print("csrrci ");
+            TRAP(cpu);
+            break;
             
         default:
             TRAP(cpu);
@@ -1194,9 +1249,6 @@ void OPCode_01(RISCV_t* cpu){
             
         case 6:
             CBRMode(cpu);
-            
-           // cpu->imm 8|4:3|7:6|2:1|5
-            
             print("c.beqz ");
             RVbeq(cpu);
 
@@ -1267,8 +1319,8 @@ void OPCode_10(RISCV_t* cpu){
 
 
 
-void interruptRequest(void){
-    
+void RISCVInterruptRequest(RISCV_t*cpu, uint32_t level){
+    cpu->irqLevelRequest = level;
 }
 
 
@@ -1282,14 +1334,25 @@ void RISCVSetSP(RISCV_t* cpu, uint32_t sp){
 
 void RISCVinit(RISCV_t* cpu){
     
+    cpu->dissassem = 0;
 
-    cpu->cycle = 0;
     cpu->pc = 0;
+    cpu->halt = 0;
+    cpu->irqLevelRequest = 0;
+    
+    //System starts at machine level privilage
+    cpu->privilage = machine;
+    //user mode CSRs
+    cpu->cycle = &cpu->csr[3072];
+    *cpu->cycle = 0;
 
-    cpu->interruptRequest = interruptRequest;
+    //Set machine ID
+    cpu->csr[3840] = 0x80000000; //mcpuid = RV64I
+    cpu->csr[3841] = 0x8000;    //Anonymous vendor... i.e. Matt Parsons.
+    cpu->csr[769]  = 0x0;  //mtvec = machine exception handler
+    cpu->csr[833]  = 0x0;  //mepc = pc at which exception occured.
     
     
-
     for(int i=0; i<128;++i){
         cpu->opCode[i] = TRAP;
     }
@@ -1352,19 +1415,31 @@ void RISCVinit(RISCV_t* cpu){
 void RISCVExecute(RISCV_t* cpu){
     
     
-    //Check interrupts
-    
+    //wait for an interrupt
+    if(cpu->irqLevelRequest != 0){
+        
+        //printf("Escalate Privilage!!!");
+        //do everthing required to raise Privilage level
+        cpu->irqLevelRequest = 0;
+        cpu->halt = 0;
+    }else if(cpu->halt == 1){
+        print("halted\n");
+        *cpu->cycle += 1;
+        return;
+    }
     
     //Fetch instruction
-    print("%d | %0x: ",cpu->cycle, cpu->pc);
-    cpu->currentInstruction = cpu->read32(cpu->pc);
+    print("%d | %0x: ",*cpu->cycle, cpu->pc);
+    cpu->currentInstruction = cpu->read32((uint32_t)cpu->pc);
     
     
     //Decode & Execute
     
+    /*
     if(cpu->pc == 0x100028){
         printf("");
     }
+    */
     
     cpu->opCode[cpu->currentInstruction & 127](cpu);
     

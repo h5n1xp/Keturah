@@ -11,7 +11,10 @@
 #include <stdio.h>
 
 #define R64
-#define print(...) printf(__VA_ARGS__)
+
+//#define print(...) printf(__VA_ARGS__)
+#define print(...) if(cpu->dissassem == 1){printf(__VA_ARGS__);}
+
 //#define print
 
     
@@ -22,6 +25,9 @@ enum REG_NAMES{
     s6,s7,s8,s9,s10,s11,t3,t4,t5,t6
 };
 
+enum PRIVILAGE{
+    user = 0, supervisor, reserved, machine
+};
 
 #ifdef R64
 typedef struct{
@@ -41,35 +47,35 @@ typedef struct{
 typedef struct RISCV_t RISCV_t;
 
 typedef struct RISCV_t{
-    
+    uint32_t dissassem;
     uint8_t  (*read8)(uint32_t);  // memory handler read(address) => value
     uint16_t (*read16)(uint32_t);
     uint32_t (*read32)(uint32_t);
-    uint32_t (*read64)(uint32_t);
+    uint64_t (*read64)(uint32_t);
     
     void (*write8)(uint32_t,uint8_t);  // memory handler write(address, value)
     void (*write16)(uint32_t,uint16_t);
     void (*write32)(uint32_t,uint32_t);
     void (*write64)(uint32_t,uint64_t);
     
-    void (*interruptRequest)(void);
-    
     void (*opCode[128])(RISCV_t*);
     
     
 #ifdef R64
     uint64_t xReg[32];
-    uint64_t mtvec;     //Interrupt base address
-    uint64_t mepc;      //interrupted PC
+    uint64_t csr[4096];
 #else
     uint32_t xReg[32];
+    uint32_t csr[4096];
 #endif
 
     
-    uint32_t* vbr;
+    enum PRIVILAGE privilage;
+    uint32_t irqLevelRequest;
+    uint32_t halt;                  // wait for an interrupt
     uint32_t iSize;
     uint32_t currentInstruction;
-    uint64_t cycle;
+    uint64_t* cycle;
     uint32_t* debug;
     
     uint32_t func3;
@@ -100,5 +106,7 @@ void RISCVSetPC(RISCV_t* cpu, uint32_t pc);
 void RISCVSetSP(RISCV_t* cpu, uint32_t sp);
 
 void RISCVExecute(RISCV_t* cpu);
+
+void RISCVInterruptRequest(RISCV_t*cpu, uint32_t level);
     
 #endif /* riscv_h */
