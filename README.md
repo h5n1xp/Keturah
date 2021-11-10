@@ -8,3 +8,5 @@ It implements the RV32IM instruction set, plus a few RV64IM instructions (by def
 The compressed RV32C instructions are decoded but not fully implemented yet, the entire 16bit ISA  decoding stage is a mess and needs to be rewritten.
 
 The supervisor extension is supported, but the CPU is unable to escalate privilage yet.
+
+The CPU currently, only supports a maximum of 4gigabytes of RAM.
