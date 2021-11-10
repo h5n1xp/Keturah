@@ -7,6 +7,8 @@
 
 #include "riscv.h"
 
+#include "SDL2/SDL.h"
+
 char* abi[] = {
     "zero", " ra ", " sp ", " gp ", " tp ", " t0 ", " t1 ", " t2 ", " s0 ", " s1 ", " a0 ",
     " a1 ", " a2 ", " a3 ", " a4 ", " a5 ", " a6 ", " a7 ", " s2 ", " s3 ", " s4 ", " s5 ",
@@ -639,6 +641,35 @@ void RVaddw(RISCV_t* cpu){
     *cpu->cycle += 1;
 }
 
+void RVmulw(RISCV_t* cpu){
+    print("%s, %s, %s",abi[cpu->rd],abi[cpu->rs1],abi[cpu->rs2]);
+    cpu->xReg[cpu->rd] = (int32_t)cpu->xReg[cpu->rs1] * (int32_t)cpu->xReg[cpu->rs2];
+    *cpu->cycle += 1;
+}
+
+void RVdivw(RISCV_t* cpu){
+    print("%s, %s, %s",abi[cpu->rd],abi[cpu->rs1],abi[cpu->rs2]);
+    cpu->xReg[cpu->rd] = (int32_t)cpu->xReg[cpu->rs1] / (int32_t)cpu->xReg[cpu->rs2];
+    *cpu->cycle += 1;
+}
+
+void RVdivuw(RISCV_t* cpu){
+    print("%s, %s, %s",abi[cpu->rd],abi[cpu->rs1],abi[cpu->rs2]);
+    cpu->xReg[cpu->rd] = (uint32_t)cpu->xReg[cpu->rs1] / (uint32_t)cpu->xReg[cpu->rs2];
+    *cpu->cycle += 1;
+}
+
+void RVremw(RISCV_t* cpu){
+    print("%s, %s, %s",abi[cpu->rd],abi[cpu->rs1],abi[cpu->rs2]);
+    cpu->xReg[cpu->rd] = (int32_t)cpu->xReg[cpu->rs1] % (int32_t)cpu->xReg[cpu->rs2];
+    *cpu->cycle += 1;
+}
+
+void RVremuw(RISCV_t* cpu){
+    print("%s, %s, %s",abi[cpu->rd],abi[cpu->rs1],abi[cpu->rs2]);
+    cpu->xReg[cpu->rd] = (uint32_t)cpu->xReg[cpu->rs1] % (uint32_t)cpu->xReg[cpu->rs2];
+    *cpu->cycle += 1;
+}
 
 void OPCode_0111011(RISCV_t* cpu){
     cpu->iSize = 4;
@@ -649,12 +680,44 @@ void OPCode_0111011(RISCV_t* cpu){
             if( (cpu->func7 & 127) == 32){
                 print("subw ");
                 RVsubw(cpu);
+            }else if( (cpu->func7 & 1) == 1){
+                print("mulw ");
+                RVmulw(cpu);
             }else{
                 print("addw ");
                 RVaddw(cpu);
             }
             cpu->pc += cpu->iSize;
             break;
+            
+        case 4:
+            //(cpu->func7 & 1) == 1
+            print("divw ");
+            RVdivw(cpu);
+            cpu->pc += cpu->iSize;
+            break;
+            
+        case 5:
+            //(cpu->func7 & 1) == 1
+            print("divuw ");
+            RVdivuw(cpu);
+            cpu->pc += cpu->iSize;
+            break;
+            
+        case 6:
+            //(cpu->func7 & 1) == 1
+            print("remw ");
+            RVremw(cpu);
+            cpu->pc += cpu->iSize;
+            break;
+            
+        case 7:
+            //(cpu->func7 & 1) == 1
+            print("remuw ");
+            RVremuw(cpu);
+            cpu->pc += cpu->iSize;
+            break;
+            
         default:
             TRAP(cpu);
             break;
@@ -778,6 +841,9 @@ void OPCode_0110011(RISCV_t* cpu){
             if( cpu->func7 == 0x20){
                 print("sub ");
                 RVsub(cpu);
+            }else if(cpu->func7 == 0x01){
+                print("mul ");
+                TRAP(cpu);
             }else{
                 print("add ");
                 RVadd(cpu);
@@ -786,26 +852,46 @@ void OPCode_0110011(RISCV_t* cpu){
             break;
             
         case 1:
-            print("sll ");
-            RVsll(cpu);
+            if(cpu->func7 == 0x01){
+                print("mulh ");
+                TRAP(cpu);
+            }else{
+                print("sll ");
+                RVsll(cpu);
+            }
             cpu->pc += cpu->iSize;
             break;
             
         case 2:
-            print("slt ");
-            RVslt(cpu);
+            if(cpu->func7 == 0x01){
+                print("mulsu ");
+                TRAP(cpu);
+            }else{
+                print("slt ");
+                RVslt(cpu);
+            }
             cpu->pc += cpu->iSize;
             break;
             
         case 3:
-            print("sltu ");
-            RVsltu(cpu);
+            if(cpu->func7 == 0x01){
+                print("mulu ");
+                TRAP(cpu);
+            }else{
+                print("sltu ");
+                RVsltu(cpu);
+            }
             cpu->pc += cpu->iSize;
             break;
             
         case 4:
-            print("xor ");
-            RVxor(cpu);
+            if(cpu->func7 == 0x01){
+                print("div ");
+                TRAP(cpu);
+            }else{
+                print("xor ");
+                RVxor(cpu);
+            }
             cpu->pc += cpu->iSize;
             break;
             
@@ -813,6 +899,9 @@ void OPCode_0110011(RISCV_t* cpu){
             if( cpu->func7 == 0x20){
                 print("sra ");
                 RVsra(cpu);
+            }else if(cpu->func7 == 0x01){
+                print("divu ");
+                TRAP(cpu);
             }else{
                 print("srl ");
                 RVsrl(cpu);
@@ -821,14 +910,24 @@ void OPCode_0110011(RISCV_t* cpu){
             break;
             
         case 6:
-            print("or ");
-            RVor(cpu);
+            if(cpu->func7 == 0x01){
+                print("rem ");
+                TRAP(cpu);
+            }else{
+                print("or ");
+                RVor(cpu);
+            }
             cpu->pc += cpu->iSize;
             break;
             
         case 7:
-            print("and ");
-            RVand(cpu);
+            if(cpu->func7 == 0x01){
+                print("remu ");
+                TRAP(cpu);
+            }else{
+                print("and ");
+                RVand(cpu);
+            }
             cpu->pc += cpu->iSize;
             break;
     }
@@ -1347,7 +1446,7 @@ void RISCVinit(RISCV_t* cpu){
     *cpu->cycle = 0;
 
     //Set machine ID
-    cpu->csr[3840] = 0x80000000; //mcpuid = RV64I
+    cpu->csr[3840] = 0x80000000 | 0x100 | 0x1000; //mcpuid = RV64 | I | M
     cpu->csr[3841] = 0x8000;    //Anonymous vendor... i.e. Matt Parsons.
     cpu->csr[769]  = 0x0;  //mtvec = machine exception handler
     cpu->csr[833]  = 0x0;  //mepc = pc at which exception occured.
@@ -1424,12 +1523,12 @@ void RISCVExecute(RISCV_t* cpu){
         cpu->halt = 0;
     }else if(cpu->halt == 1){
         print("halted\n");
-        *cpu->cycle += 1;
+        //*cpu->cycle += 1;
         return;
     }
     
     //Fetch instruction
-    print("%d | %0x: ",*cpu->cycle, cpu->pc);
+    print("%d, %0lx: ",*cpu->cycle, cpu->pc);
     cpu->currentInstruction = cpu->read32((uint32_t)cpu->pc);
     
     
@@ -1440,9 +1539,9 @@ void RISCVExecute(RISCV_t* cpu){
         printf("");
     }
     */
-    
+
     cpu->opCode[cpu->currentInstruction & 127](cpu);
-    
+
     //Set xReg0 to 0 after every instruction, to discard any data stored there.
     cpu->xReg[0] = 0;
 

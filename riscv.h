@@ -47,7 +47,13 @@ typedef struct{
 typedef struct RISCV_t RISCV_t;
 
 typedef struct RISCV_t{
+    
+    //Various random debugging variables
+    uint32_t timeS;
+    uint32_t timeCount;
     uint32_t dissassem;
+    
+    
     uint8_t  (*read8)(uint32_t);  // memory handler read(address) => value
     uint16_t (*read16)(uint32_t);
     uint32_t (*read32)(uint32_t);
@@ -95,6 +101,8 @@ typedef struct RISCV_t{
 #else
     uint32_t pc;
 #endif
+    
+    //Human readable registers not needed for emulator
     regs_t* resisters;
     
 } RISCV_t;
